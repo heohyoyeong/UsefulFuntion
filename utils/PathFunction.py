@@ -1,10 +1,6 @@
-import cv2
 from glob import glob
-import pandas as pd
 import cv2
 import matplotlib.pyplot as plt
-import numpy as np
-from matplotlib.ticker import PercentFormatter
 import os
 
 
@@ -18,6 +14,7 @@ def change_name(origin_path,save_path):
         origin_type = origin_name.split(".")[-1]
         name = str(idx).zfill(5) + "." + origin_type
         cv2.imwrite(save_path+"/"+name,img)
+
 
 def Calc_diff_MaxScore(Apath,Bpath,save_path):
     """ 이름끝에 붙은 ScoreMap max값을 뺴서 CSV 파일로 저장 """
@@ -112,18 +109,6 @@ def Calc_diff_MaxScore(Apath,Bpath,save_path):
                 else:
                     fig.savefig(save_path + "bigDiff/img/rect/" + name + "_" + str(diff) + ".jpg")
                 plt.close(fig)
-
-    #
-    # df = pd.DataFrame({"name":names,"scores":scores})
-    # df.to_csv(save_path+"diff.csv")
-    #
-    # diffss = np.array(scores)
-    #
-    # plt.hist(diffss, bins= 8, range= [-1,1], weights=np.ones(len(diffss)) / len(diffss))
-    #
-    # plt.gca().yaxis.set_major_formatter(PercentFormatter(1))
-    # # plt.savefig(save_path+"diff.png")
-    # # plt.show()
 
 def remove_file(path, name_list):
     for name in name_list:

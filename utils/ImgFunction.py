@@ -2,7 +2,6 @@ import cv2
 from glob import glob
 import numpy as np
 import os
-import random
 from skimage.metrics import structural_similarity as ssim
 
 def Template_Maching(Small_Image,Large_Image):
@@ -66,7 +65,6 @@ def NamePathImgSave(ImgList,SavePath,DataName):
     """ 이미지와 저장주소 데이터 명을 받아 저장"""
     os.makedirs(SavePath, exist_ok=True)
     for i in range(len(ImgList)): cv2.imwrite(SavePath+"/"+DataName[i],ImgList[i])
-
 
 def ImgThreshold(ImgList,Threshold):
     result = []
@@ -156,176 +154,6 @@ def InputImageTemplateMachingProcess(Query_Origin,Reference1_Origin,Reference2_O
     Ref2_Crop = Ref2_Semi_Crop[Ref2_ROI[1]:Ref2_ROI[1] + ROI[3], Ref2_ROI[0]:Ref2_ROI[0] +ROI[2]]
 
     return Query_Crop, Ref1_Crop, Ref2_Crop, Mask_Crop
-
-def SetDataPath_RandomCrop(QueryPath, Ref1Path, Ref2Path, MaskPath, SavePath, MarginSize, ROI, InputRange, CropNum):
-    """ 3개의 데이터 주소를 받아 ROI내부에서 입력 범위 내의 크기로 랜덤하게 크롭하여 저장 """
-
-    os.makedirs(SavePath, exist_ok=True)
-
-    que_list = glob(QueryPath)
-    ref1_list = glob(Ref1Path)
-    ref2_list = glob(Ref2Path)
-    mask_list = glob(MaskPath)
-
-    size_range = [i for i in range(InputRange[0]-InputRange[1],InputRange[0]+InputRange[1])]
-
-    os.makedirs(SavePath + "/rect", exist_ok=True)
-    os.makedirs(SavePath + "/square", exist_ok=True)
-
-    for idx in range(len(que_list)):
-        QueryOrigin = cv2.imread(que_list[idx], cv2.IMREAD_GRAYSCALE)
-        Reference1Origin = cv2.imread(ref1_list[idx], cv2.IMREAD_GRAYSCALE)
-        Reference2Origin = cv2.imread(ref2_list[idx], cv2.IMREAD_GRAYSCALE)
-        MaskOrigin = cv2.imread(mask_list[idx], cv2.IMREAD_GRAYSCALE)
-
-        name = que_list[idx].split("\\")[-1]
-
-        os.makedirs(SavePath+"/rect/que", exist_ok=True)
-        os.makedirs(SavePath+"/rect/ref1", exist_ok=True)
-        os.makedirs(SavePath+"/rect/ref2", exist_ok=True)
-        os.makedirs(SavePath+"/rect/mask", exist_ok=True)
-        os.makedirs(SavePath+"/rect/Resizemask", exist_ok=True)
-
-        os.makedirs(SavePath+"/square/que", exist_ok=True)
-        os.makedirs(SavePath+"/square/ref1", exist_ok=True)
-        os.makedirs(SavePath+"/square/ref2", exist_ok=True)
-        os.makedirs(SavePath+"/square/mask", exist_ok=True)
-        os.makedirs(SavePath+"/square/Resizemask", exist_ok=True)
-
-        que, ref1, ref2, mask = InputImageTemplateMachingProcess(QueryOrigin, Reference1Origin, Reference2Origin, MaskOrigin, ROI, MarginSize)
-
-        w, h = que.shape
-
-
-        for Num in range(CropNum):
-
-            selectedwidth = random.choice(size_range)
-            selectedheight = random.choice(size_range)
-
-            while(True):
-                if (selectedwidth*1.2 < selectedheight or selectedwidth*0.8 > selectedheight):
-                    break
-                else:
-                    selectedheight = random.choice(size_range)
-
-            LeftTopXrange = [i for i in range(0,w-selectedwidth-1)]
-            LeftTopYrange = [i for i in range(0,w-selectedheight-1)]
-
-            selectedLeftTopX = random.choice(LeftTopXrange)
-            selectedLeftTopY = random.choice(LeftTopYrange)
-
-            SaveRectName = str(idx).zfill(4)+"_"+str(Num).zfill(5) + ".jpg"
-            RandomCropRectQuery = ImgCrop(que,selectedLeftTopX,selectedLeftTopY,selectedwidth,selectedheight)
-            RandomCropRectRef1 = ImgCrop(ref1,selectedLeftTopX,selectedLeftTopY,selectedwidth,selectedheight)
-            RandomCropRectRef2 = ImgCrop(ref2,selectedLeftTopX,selectedLeftTopY,selectedwidth,selectedheight)
-            RandomCropRectMask = ImgCrop(mask,selectedLeftTopX,selectedLeftTopY,selectedwidth,selectedheight)
-
-            SaveSquareName = str(idx).zfill(4)+"_"+str(Num).zfill(5) + ".jpg"
-
-            RandomCropSquareQuery = ImgCrop(que,selectedLeftTopX,selectedLeftTopY,selectedwidth,selectedwidth)
-            RandomCropSquareRef1 = ImgCrop(ref1,selectedLeftTopX,selectedLeftTopY,selectedwidth,selectedwidth)
-            RandomCropSquareRef2 = ImgCrop(ref2,selectedLeftTopX,selectedLeftTopY,selectedwidth,selectedwidth)
-            RandomCropSquareMask = ImgCrop(mask,selectedLeftTopX,selectedLeftTopY,selectedwidth,selectedwidth)
-
-
-            if (len(np.nonzero(RandomCropSquareMask)[0])*len(np.nonzero(RandomCropRectMask)[0])!=0):
-
-                cv2.imwrite(SavePath+"/rect/que"+"/"+SaveRectName, RandomCropRectQuery)
-                cv2.imwrite(SavePath+"/rect/ref1"+"/"+SaveRectName, RandomCropRectRef1)
-                cv2.imwrite(SavePath+"/rect/ref2"+"/"+SaveRectName, RandomCropRectRef2)
-                cv2.imwrite(SavePath+"/rect/mask"+"/"+SaveRectName, RandomCropRectMask)
-
-                RandomCropResizeRectMask = cv2.resize(RandomCropRectMask, (224,224))
-                RandomCropResizeRectMask[RandomCropResizeRectMask<30] = 0
-                RandomCropResizeRectMask[np.nonzero(RandomCropResizeRectMask)]=255
-                cv2.imwrite(SavePath+"/rect/Resizemask"+"/"+SaveRectName, RandomCropResizeRectMask)
-
-                cv2.imwrite(SavePath+"/square/que"+"/"+SaveSquareName, RandomCropSquareQuery)
-                cv2.imwrite(SavePath+"/square/ref1"+"/"+SaveSquareName, RandomCropSquareRef1)
-                cv2.imwrite(SavePath+"/square/ref2"+"/"+SaveSquareName, RandomCropSquareRef2)
-                cv2.imwrite(SavePath+"/square/mask"+"/"+SaveSquareName, RandomCropSquareMask)
-
-                RandomCropResizeSquareMask = cv2.resize(RandomCropSquareMask, (224,224))
-                RandomCropResizeSquareMask[RandomCropResizeSquareMask<30] = 0
-                RandomCropResizeSquareMask[np.nonzero(RandomCropResizeSquareMask)]=255
-                cv2.imwrite(SavePath+"/square/Resizemask"+"/"+SaveSquareName, RandomCropResizeSquareMask)
-
-def MaskCrop():
-    """ ROI와 Size를 받아 mask를 저장"""
-
-    path = "C:/Users/dit/Desktop/dd/CAM01"
-    img_path = path + "/Camera[01]-Frame[22].jpg"
-    mask_path = path + "/Camera[01]-Frame[23].jpg"
-
-    img = cv2.imread(img_path,cv2.IMREAD_GRAYSCALE)
-
-    Mask = cv2.imread(mask_path,cv2.IMREAD_GRAYSCALE)
-    cnt, labels, stats, centroids = cv2.connectedComponentsWithStats(Mask)
-
-    for i in range(len(stats)-1):
-        x = stats[i+1][0]
-        y = stats[i+1][1]
-        w = stats[i+1][2]
-        h = stats[i+1][3]
-        croped_img = ImgCrop(img,x,y,w,h)
-        cv2.imwrite(path+"/babo.jpg",croped_img)
-
-def FindWrongImg(ImagePath,result,score,percent):
-    img_list = glob(ImagePath)
-    for idx in range(len(img_list)):
-        name = img_list[idx].split("\\")[-1]
-        img = cv2.imread(img_list[idx], cv2.IMREAD_GRAYSCALE)
-        if (img.size*percent<sum(sum(img<score))):
-            result.append(name)
-    return result
-
-def ListInputCommonMaskMake(img1_list,img2_list):
-    result = []
-    mask1_list = PathToImgList(img1_list)
-    mask2_list = PathToImgList(img2_list)
-
-    for idx in range(len(mask1_list)):
-        mask1 = mask1_list[idx]
-        mask2 = mask2_list[idx]
-        FusionMask = ImgDotProduct(mask1,mask2)
-        result.append(FusionMask)
-    return result
-
-def CalcMeansimilarity(img1_path,img2_path):
-    result = []
-    img1_list = PathToImgList(img1_path)
-    img2_list = PathToImgList(img2_path)
-
-    for idx in range(len(img1_list)):
-        img1 = img1_list[idx]
-        img2 = img2_list[idx]
-        score = CalcSimilarity(img1,img2)
-        result.append(score)
-
-    numpy_result = np.array(result)
-    return np.mean(numpy_result)
-
-def MasklistDotProduct(img1_list,img2_list):
-    result = []
-    for idx in range(len(img1_list)):
-        DotImg = ImgDotProduct(img1_list[idx], img2_list[idx])
-        result.append(DotImg*255)
-    return result
-
-
-def PathToImgList(Img_Path):
-    """ Path를 받아 grayscale img list 반환"""
-    result = []
-    img_Path_list = glob(Img_Path)
-    for path in img_Path_list:
-        img = cv2.imread(path,cv2.IMREAD_GRAYSCALE)
-        result.append(img)
-    return result
-
-def ImgCrop(Image,x,y,w,h):
-    """ 이미지와 ROI를 Crop 이미지 반환"""
-    CropImage = Image[y:y+h,x:x+w]
-    return CropImage
 
 def CalcScoreMapMeanDiff(ScoreMapPath,MaskPath):
     '''검출된 결함의 ScoreMap 평균과 그외 지역의 평균의 차를 계산'''
